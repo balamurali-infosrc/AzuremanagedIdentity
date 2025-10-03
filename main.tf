@@ -10,6 +10,8 @@ terraform {
 
 provider "azurerm" {
   features {}
+  subscription_id = "02a44fee-b200-4cf9-b042-9bd4aa3bebe6"
+tenant_id = "63b9a1c1-375c-42cf-9c63-dc3798c7ae5e"
 }
 
 data "azurerm_client_config" "current" {}
@@ -50,7 +52,20 @@ resource "azurerm_role_assignment" "uai_kv_access" {
 
   depends_on = [azurerm_user_assigned_identity.uai]
 }
+# Virtual network and subnet
+resource "azurerm_virtual_network" "vnet" {
+  name                = "vnet-demo"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  address_space       = ["10.0.0.0/16"]
+}
 
+resource "azurerm_subnet" "subnet" {
+  name                 = "subnet-demo"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
 # Optional: VM with the User-assigned identity
 resource "azurerm_network_interface" "nic" {
   name                = "nic-demo"
@@ -62,6 +77,7 @@ resource "azurerm_network_interface" "nic" {
     subnet_id                     = "/subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RG>/providers/Microsoft.Network/virtualNetworks/<VNET>/subnets/<SUBNET>"
     private_ip_address_allocation = "Dynamic"
   }
+  depends_on = [azurerm_subnet.subnet]
 }
 
 resource "azurerm_linux_virtual_machine" "vm" {
