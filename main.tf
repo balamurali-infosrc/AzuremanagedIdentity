@@ -29,13 +29,13 @@ resource "azurerm_user_assigned_identity" "uai" {
 
 # Example: Key Vault
 resource "azurerm_key_vault" "kv" {
-  name                        = "kv-demo-${random_id.suffix.hex}"
-  resource_group_name         = azurerm_resource_group.rg.name
-  location                    = azurerm_resource_group.rg.location
-  tenant_id                   = data.azurerm_client_config.current.tenant_id
-  sku_name                    = "standard"
-#   soft_delete_enabled         = true
-  purge_protection_enabled    = false
+  name                = "kv-demo-${random_id.suffix.hex}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  sku_name            = "standard"
+  #   soft_delete_enabled         = true
+  purge_protection_enabled = false
 }
 
 resource "random_id" "suffix" {
@@ -65,11 +65,11 @@ resource "azurerm_network_interface" "nic" {
 }
 
 resource "azurerm_linux_virtual_machine" "vm" {
-  name                = "vm-demo"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  size                = "Standard_B1s"
-  admin_username      = "azureuser"
+  name                  = "vm-demo"
+  resource_group_name   = azurerm_resource_group.rg.name
+  location              = azurerm_resource_group.rg.location
+  size                  = "Standard_B1s"
+  admin_username        = "azureuser"
   network_interface_ids = [azurerm_network_interface.nic.id]
 
   admin_ssh_key {
