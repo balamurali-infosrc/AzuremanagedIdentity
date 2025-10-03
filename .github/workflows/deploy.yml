@@ -81,16 +81,16 @@ jobs:
         id: plan
         run: |
           terraform plan -out=tfplan -input=false
-      #     terraform show -no-color -json tfplan > tfplan.json
+          terraform show -no-color -json tfplan > tfplan.json
 
-      # # Upload plan artifact for inspection
-      # - name: Upload Terraform Plan Artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: tfplan
-      #     path: |
-      #       tfplan
-      #       tfplan.json
+      # Upload plan artifact for inspection
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: |
+            tfplan
+            tfplan.json
 
       # Apply only on main branch
       - name: Terraform Apply (auto-approve) 
