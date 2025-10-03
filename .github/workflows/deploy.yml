@@ -4,13 +4,17 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+
 permissions:
   id-token: write
   contents: read
-  pages: write
+
 env:
   TF_VERSION: "1.8.5"
-  TF_WORKING_DIR: "."
+  TF_WORKING_DIR: "."    # change if your .tf files are in a subfolder
 
 jobs:
   terraform:
@@ -20,15 +24,30 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
 
     steps:
+      # Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Cache .terraform plugins to speed up provider downloads
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: |
+            .terraform/plugin-cache
+            .terraform/providers
+            .terraform/plugins
+          key: ${{ runner.os }}-terraform-${{ env.TF_VERSION }}-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-${{ env.TF_VERSION }}-
+
+      # Install Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Azure Login
+      # Login to Azure
+      - name: Azure Login (Service Principal)
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -36,23 +55,35 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
           auth-type: service_principal
+
+      # Export the SSH public key into TF var (so Terraform var.ssh_public_key is set)
+      - name: Set Terraform env var for SSH key
+        run: echo "SSH public key set for Terraform"
+        env:
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+
+      # Format Terraform files (auto-fix formatting)
       - name: Terraform Format
         run: |
-         terraform fmt -recursive
-         terraform fmt -check
+          terraform fmt -recursive
+          terraform fmt -check
 
+      # Initialize Terraform
       - name: Terraform Init
         run: terraform init -input=false
 
+      # Validate
       - name: Terraform Validate
         run: terraform validate
 
+      # Plan
       - name: Terraform Plan
         id: plan
         run: |
           terraform plan -out=tfplan -input=false
           terraform show -no-color -json tfplan > tfplan.json
 
+      # Upload plan artifact for inspection
       - name: Upload Terraform Plan Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -61,6 +92,7 @@ jobs:
             tfplan
             tfplan.json
 
-      - name: Terraform Apply
+      # Apply only on main branch
+      - name: Terraform Apply (auto-approve) 
         if: github.ref == 'refs/heads/main'
         run: terraform apply -input=false -auto-approve tfplan
