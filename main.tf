@@ -80,7 +80,7 @@ resource "azurerm_role_assignment" "uai_kv_access" {
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_user_assigned_identity.uai.principal_id
 
-  # depends_on = [azurerm_user_assigned_identity.uai,azurerm_key_vault.kv]
+   depends_on = [azurerm_user_assigned_identity.uai,azurerm_key_vault.kv]
 }
 
 # -------------------------
