@@ -59,10 +59,10 @@ resource "azurerm_key_vault" "kv" {
     object_id = azurerm_user_assigned_identity.uai.principal_id
 
     secret_permissions = [
-      "get",
-      "list",
-      "set",
-      "delete"
+      "Get",
+      "List",
+      "Set",
+      "Delete"
     ]
   }
 }
