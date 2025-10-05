@@ -1,0 +1,95 @@
+name: Terraform Azure Managed Identity
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write    # required for GitHub to mint OIDC tokens
+  contents: read
+
+env:
+  TF_VERSION: "1.8.5"
+  TF_WORKING_DIR: "."    # change if your .tf files are in a subfolder
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    # Make TF_VAR_ssh_public_key available to every step in the job
+    env:
+      TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+      ARM_USE_OIDC: "true"               # tell Azure/Terraform to use OIDC
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }} # optional convenience
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}             # optional convenience
+
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: |
+            .terraform/plugin-cache
+            .terraform/providers
+            .terraform/plugins
+          key: ${{ runner.os }}-terraform-${{ env.TF_VERSION }}-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-${{ env.TF_VERSION }}-
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # Login to Azure using OIDC / federated credential (NO client-secret)
+      # Requires: you created a federated identity credential in Azure that trusts
+      #           GitHub Actions for repo: YOUR_ORG/YOUR_REPO (see note below)
+      - name: Azure Login (OIDC / federated)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}         # App Registration or User-Assigned Identity clientId
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          # client-secret: (intentionally omitted for OIDC)
+
+      - name: Ensure Microsoft.Web provider is registered (optional)
+        run: |
+          az provider show --namespace Microsoft.Web --query "registrationState" -o tsv || true
+          az provider register --namespace Microsoft.Web
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -out=tfplan -input=false
+          terraform show -no-color -json tfplan > tfplan.json
+
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: |
+            tfplan
+            tfplan.json
+
+      - name: Terraform Apply (auto-approve)
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -input=false -auto-approve tfplan
