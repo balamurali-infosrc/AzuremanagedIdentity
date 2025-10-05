@@ -50,6 +50,7 @@ resource "azurerm_key_vault" "kv" {
   tenant_id                   = data.azurerm_client_config.current.tenant_id
   sku_name                    = "standard"
   purge_protection_enabled    = false
+  soft_delete_retention_days  = 7
 
   # Access policy block intentionally omitted in favor of RBAC role assignment.
   # Ensure your subscription allows Key Vault RBAC or adjust as needed.
@@ -70,7 +71,7 @@ resource "azurerm_role_assignment" "uai_kv_access" {
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_user_assigned_identity.uai.principal_id
 
-  depends_on = [azurerm_user_assigned_identity.uai]
+  depends_on = [azurerm_user_assigned_identity.uai,azurerm_key_vault.kv]
 }
 
 # -------------------------
