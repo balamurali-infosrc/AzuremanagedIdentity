@@ -22,9 +22,13 @@ variable "admin_username" {
   default     = "azureuser"
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for the VM (use TF_VAR_ssh_public_key or provide via variables)"
-  type        = string
-  sensitive   = true
-  default = "CUsersBalamuraliRamakrishn.sshid_rsa.pub"
+# variable "ssh_public_key" {
+#   description = "SSH public key for the VM (use TF_VAR_ssh_public_key or provide via variables)"
+#   type        = string
+#   sensitive   = true
+#   default = "CUsersBalamuraliRamakrishn.sshid_rsa.pub"
+# }
+variable "ssh_public_keys" {
+  type    = list(string)
+  default = []   # empty list by default
 }

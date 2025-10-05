@@ -123,14 +123,14 @@ resource "azurerm_linux_virtual_machine" "vm" {
   admin_username        = var.admin_username
   network_interface_ids = [azurerm_network_interface.nic.id]
 
-  dynamic "admin_ssh_key" {
-  for_each = length(var.ssh_public_key) > 0 ? toset([var.ssh_public_key]) : []
+ dynamic "admin_ssh_key" {
+    for_each = length(var.ssh_public_keys) > 0 ? { for idx, k in var.ssh_public_keys : idx => k } : {}
 
-  content {
-    username   = "azureuser"
-    public_key = admin_ssh_key.value
+    content {
+      username   = "azureuser"
+      public_key = admin_ssh_key.value
+    }
   }
-}
 
 
   source_image_reference {
