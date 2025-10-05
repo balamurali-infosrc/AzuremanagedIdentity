@@ -54,8 +54,18 @@ resource "azurerm_key_vault" "kv" {
 
   # Access policy block intentionally omitted in favor of RBAC role assignment.
   # Ensure your subscription allows Key Vault RBAC or adjust as needed.
-}
+ access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = azurerm_user_assigned_identity.uai.principal_id
 
+    secret_permissions = [
+      "get",
+      "list",
+      "set",
+      "delete"
+    ]
+  }
+}
 # Optional example secret
 resource "azurerm_key_vault_secret" "example" {
   name         = "example-secret"
