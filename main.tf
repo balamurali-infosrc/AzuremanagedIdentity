@@ -56,14 +56,13 @@ resource "azurerm_key_vault" "kv" {
   # Ensure your subscription allows Key Vault RBAC or adjust as needed.
  access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id  # Terraform GitHub Actions OIDC principal
+    secret_permissions = ["Get","List","Set","Delete"]
+  }
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = azurerm_user_assigned_identity.uai.principal_id
-
-    secret_permissions = [
-      "Get",
-      "List",
-      "Set",
-      "Delete"
-    ]
+    secret_permissions = ["Get","List","Set","Delete"]
   }
 }
 # Optional example secret
