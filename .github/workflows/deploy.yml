@@ -26,6 +26,7 @@ jobs:
       ARM_USE_OIDC: "true"               # tell Azure/Terraform to use OIDC
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }} # optional convenience
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}             # optional convenience
+      
 
     defaults:
       run:
@@ -95,4 +96,9 @@ jobs:
 
       - name: Terraform Apply (auto-approve)
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -input=false -auto-approve tfplan
+        run: |
+         if [ -f tfplan ]; then
+          terraform apply -input=false -auto-approve tfplan
+         else
+         echo "Terraform plan file not found, skipping apply."
+         fi

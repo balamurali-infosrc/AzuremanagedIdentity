@@ -94,9 +94,9 @@ resource "azurerm_public_ip" "pubip" {
   name                = "vm-demo-pip"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  allocation_method   = "Dynamic"
+  allocation_method   = "Static"
+  sku                 = "Standard"   # change from Basic
 }
-
 resource "azurerm_network_interface" "nic" {
   name                = "nic-demo"
   location            = azurerm_resource_group.rg.location
